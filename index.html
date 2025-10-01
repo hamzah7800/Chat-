@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Offline GPT-2 Chatbot</title>
 <style>
 body { font-family: sans-serif; display:flex; justify-content:center; margin-top:50px;}
-#chat { width:500px; border:1px solid #ccc; padding:15px; border-radius:8px; background:#fff;}
+#chat { width:600px; border:1px solid #ccc; padding:15px; border-radius:8px; background:#fff;}
 #messages { height:400px; overflow-y:auto; border-bottom:1px solid #ddd; padding-bottom:10px;}
 .message { margin:5px 0; }
 .user { text-align:right; color:blue; }
@@ -22,17 +23,16 @@ button { padding:8px; }
 </div>
 
 <script>
-// --- Tiny GPT-2-like trained probabilities (from a small English corpus) ---
+// --- Vocabulary and tiny GPT-2 char-level probabilities ---
 const vocab = "abcdefghijklmnopqrstuvwxyz .,!?";
 const probs = {};
-
-// Example: small probability table for demo
-// Each char maps to the probability distribution of next chars
 const rawData = `
-hello world. this is a tiny offline chatbot. it can talk a bit about anything.
-how are you today? i hope you are doing well. let's chat and have fun!
+hello world. this is a tiny offline chatbot. it can chat a bit about anything.
+how are you today? i hope you are doing well. let's talk and have some fun!
+feel free to ask questions or just say hi. i try to respond in a smart way.
 `;
 
+// Build probability table from tiny dataset
 for (let i = 0; i < rawData.length - 1; i++) {
   const c = rawData[i].toLowerCase();
   const next = rawData[i+1].toLowerCase();
@@ -49,7 +49,7 @@ function normalize(table){
   for(let k in table) table[k] /= sum;
 }
 
-// Sample next character based on probabilities
+// Sample next char using probabilities
 function sampleNextChar(prev){
   const table = probs[prev] || probs[" "];
   normalize(table);
@@ -62,18 +62,28 @@ function sampleNextChar(prev){
   return " ";
 }
 
-// Conversation memory
+// --- Conversation memory ---
 let conversation = [];
 
-// Generate reply (tiny char-level GPT-2)
+// Maintain last N messages for context
+const CONTEXT_LEN = 5;
+
+// Generate reply based on conversation
 function generateReply(input){
   conversation.push("User: " + input);
+
+  // Build context string
+  const context = conversation.slice(-CONTEXT_LEN).join("\n");
+  
+  // Start generation with last char of context or space
+  let lastChar = context.slice(-1) || " ";
   let reply = "";
-  let lastChar = " ";
+
   for(let i=0;i<200;i++){ // generate 200 chars max
     lastChar = sampleNextChar(lastChar);
     reply += lastChar;
   }
+
   conversation.push("Bot: " + reply);
   return reply;
 }
