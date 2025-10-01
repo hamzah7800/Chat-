@@ -1,32 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChatBot</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- prevent favicon 404 -->
-  <link rel="icon" href="data:,">
+<meta charset="UTF-8">
+<title>Smart Offline GPT-2 Chatbot</title>
+<style>
+body { font-family: sans-serif; display:flex; justify-content:center; margin-top:50px;}
+#chat { width:500px; border:1px solid #ccc; padding:15px; border-radius:8px; background:#fff;}
+#messages { height:400px; overflow-y:auto; border-bottom:1px solid #ddd; padding-bottom:10px;}
+.message { margin:5px 0; }
+.user { text-align:right; color:blue; }
+.bot { text-align:left; color:green; }
+input { width:80%; padding:8px; }
+button { padding:8px; }
+</style>
 </head>
-
 <body>
-  <div class="chatBot">
-    <header>
-      <h2>ChatBot</h2>
-      <span alt="Close" id="cross" onclick="cancel()">X</span>
-    </header>
-    <ul class="chatbox">
-      <li class="chat-incoming chat">
-        <p>Hey! How can I assist you today?</p>
-      </li>
-    </ul>
-    <div class="chat-input">
-      <textarea placeholder="Enter a message..."></textarea>
-      <button id="sendBTN">Send</button>
-    </div>
-  </div>
-  <script src="index.js" defer></script>
-</body>
+<div id="chat">
+  <div id="messages"></div>
+  <input id="userInput" placeholder="Type your message..." />
+  <button onclick="sendMessage()">Send</button>
+</div>
 
+<script>
+// --- Tiny "GPT-2-like" char-level model ---
+const vocab = "abcdefghijklmnopqrstuvwxyz .,!?";
+const probs = {}; // probability table
+
+// Simple predefined probabilities for demo (simulates training)
+for (let c of vocab) {
+  probs[c] = {};
+  for (let n of vocab) {
+    probs[c][n] = 1 + Math.random()*5; // small variation
+  }
+}
+
+// Normalize probabilities
+function normalize(table){
+  let sum = 0;
+  for(let k in table) sum += table[k];
+  for(let k in table) table[k] /= sum;
+}
+
+// Sample next char based on probabilities
+function sampleNextChar(prev){
+  const table = probs[prev] || probs[" "];
+  normalize(table);
+  let r = Math.random();
+  let acc = 0;
+  for(let c in table){
+    acc += table[c];
+    if(r < acc) return c;
+  }
+  return " ";
+}
+
+// Conversation memory
+let conversation = [];
+
+// Generate reply
+function generateReply(input){
+  conversation.push("User: " + input);
+  let reply = "";
+  let lastChar = " ";
+  for(let i=0;i<120;i++){ // generate 120 chars max
+    lastChar = sampleNextChar(lastChar);
+    reply += lastChar;
+  }
+  conversation.push("Bot: " + reply);
+  return reply;
+}
+
+// Add message to chat window
+function addMessage(msg, type){
+  const messages = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.className = `message ${type}`;
+  div.textContent = msg;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// Handle sending messages
+function sendMessage(){
+  const inputEl = document.getElementById("userInput");
+  const input = inputEl.value.trim();
+  if(!input) return;
+  addMessage(input, "user");
+  inputEl.value = "";
+  const reply = generateReply(input);
+  addMessage(reply, "bot");
+}
+</script>
+</body>
 </html>
