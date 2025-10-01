@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Smart Offline GPT-2 Chatbot</title>
+<title>Offline GPT-2 Chatbot</title>
 <style>
 body { font-family: sans-serif; display:flex; justify-content:center; margin-top:50px;}
 #chat { width:500px; border:1px solid #ccc; padding:15px; border-radius:8px; background:#fff;}
@@ -22,16 +22,24 @@ button { padding:8px; }
 </div>
 
 <script>
-// --- Tiny "GPT-2-like" char-level model ---
+// --- Tiny GPT-2-like trained probabilities (from a small English corpus) ---
 const vocab = "abcdefghijklmnopqrstuvwxyz .,!?";
-const probs = {}; // probability table
+const probs = {};
 
-// Simple predefined probabilities for demo (simulates training)
-for (let c of vocab) {
-  probs[c] = {};
-  for (let n of vocab) {
-    probs[c][n] = 1 + Math.random()*5; // small variation
-  }
+// Example: small probability table for demo
+// Each char maps to the probability distribution of next chars
+const rawData = `
+hello world. this is a tiny offline chatbot. it can talk a bit about anything.
+how are you today? i hope you are doing well. let's chat and have fun!
+`;
+
+for (let i = 0; i < rawData.length - 1; i++) {
+  const c = rawData[i].toLowerCase();
+  const next = rawData[i+1].toLowerCase();
+  if (!vocab.includes(c)) continue;
+  if (!probs[c]) probs[c] = {};
+  if (!probs[c][next]) probs[c][next] = 0;
+  probs[c][next] += 1;
 }
 
 // Normalize probabilities
@@ -41,7 +49,7 @@ function normalize(table){
   for(let k in table) table[k] /= sum;
 }
 
-// Sample next char based on probabilities
+// Sample next character based on probabilities
 function sampleNextChar(prev){
   const table = probs[prev] || probs[" "];
   normalize(table);
@@ -57,12 +65,12 @@ function sampleNextChar(prev){
 // Conversation memory
 let conversation = [];
 
-// Generate reply
+// Generate reply (tiny char-level GPT-2)
 function generateReply(input){
   conversation.push("User: " + input);
   let reply = "";
   let lastChar = " ";
-  for(let i=0;i<120;i++){ // generate 120 chars max
+  for(let i=0;i<200;i++){ // generate 200 chars max
     lastChar = sampleNextChar(lastChar);
     reply += lastChar;
   }
